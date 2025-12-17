@@ -429,13 +429,52 @@
             document.getElementById('results-container').classList.add('hidden');
 
             try {
+                // Environment Detection
+                const isStatic = window.location.hostname.includes('github.io') || window.location.protocol === 'file:';
+
+                if (isStatic) {
+                    console.log("Demo Mode: Running on Static Hosting (Client-side Mock active).");
+                    showToast("Demo Mode: Running on Static Hosting (Client-side Mock active).");
+
+                    // Simulate 1.5s delay
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+
+                    // Hardcoded Mock Data (Matches PHP structure)
+                    const mockData = {
+                        "provider": "mock",
+                        "seo_score": 85,
+                        "strengths": [
+                            "Excellent keyword density",
+                            "Clear heading structure",
+                            "Strong use of active voice"
+                        ],
+                        "weaknesses": [
+                            "Meta description is missing",
+                            "Sentences are slightly too long"
+                        ],
+                        "keywords": {
+                            "primary": ["digital marketing", "seo 2025"],
+                            "long_tail": ["ai content strategy", "future of seo"]
+                        },
+                        "meta": {
+                            "title": "The Future of SEO: AI & Digital Marketing Strategies in 2025",
+                            "description": "Discover how AI is transforming digital marketing. Learn key SEO strategies for 2025 including content automation and semantic search."
+                        },
+                        "suggestions": "This is a DEMO version. Buy the full script to unlock OpenAI & Gemini integrations."
+                    };
+
+                    renderResults(mockData);
+                    return; // Stop here for static mode
+                }
+
+                // Normal XAMPP/Server Flow
                 const apiUrl = './test_article.php';
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     mode: 'cors',
                     cache: 'no-cache',
-                    referrerPolicy: "no-referrer-when-downgrade", // NEW: Policy update
+                    referrerPolicy: "no-referrer-when-downgrade",
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
