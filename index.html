@@ -428,48 +428,50 @@
             setLoading(true);
             document.getElementById('results-container').classList.add('hidden');
 
+            // --- Universal Mock Data (Structure Matches PHP) ---
+            const mockData = {
+                "provider": "mock",
+                "seo_score": 85,
+                "strengths": [
+                    "Excellent keyword density",
+                    "Clear heading structure",
+                    "Strong use of active voice"
+                ],
+                "weaknesses": [
+                    "Meta description is missing",
+                    "Sentences are slightly too long"
+                ],
+                "keywords": {
+                    "primary": ["digital marketing", "seo 2025"],
+                    "long_tail": ["ai content strategy", "future of seo"]
+                },
+                "meta": {
+                    "title": "The Future of SEO: AI & Digital Marketing Strategies in 2025",
+                    "description": "Discover how AI is transforming digital marketing. Learn key SEO strategies for 2025 including content automation and semantic search."
+                },
+                "suggestions": "This is a DEMO version. Buy the full script to unlock OpenAI & Gemini integrations."
+            };
+
+            // --- Mock Runner Helper ---
+            const runMockFlow = async (msg) => {
+                console.log(msg);
+                showToast(msg);
+                // Simulate loading delay for realism
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                renderResults(mockData);
+            };
+
             try {
-                // Environment Detection
+                // 1. Environment Check (Static Hosting)
                 const isStatic = window.location.hostname.includes('github.io') || window.location.protocol === 'file:';
 
                 if (isStatic) {
-                    console.log("Demo Mode: Running on Static Hosting (Client-side Mock active).");
-                    showToast("Demo Mode: Running on Static Hosting (Client-side Mock active).");
-
-                    // Simulate 1.5s delay
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-
-                    // Hardcoded Mock Data (Matches PHP structure)
-                    const mockData = {
-                        "provider": "mock",
-                        "seo_score": 85,
-                        "strengths": [
-                            "Excellent keyword density",
-                            "Clear heading structure",
-                            "Strong use of active voice"
-                        ],
-                        "weaknesses": [
-                            "Meta description is missing",
-                            "Sentences are slightly too long"
-                        ],
-                        "keywords": {
-                            "primary": ["digital marketing", "seo 2025"],
-                            "long_tail": ["ai content strategy", "future of seo"]
-                        },
-                        "meta": {
-                            "title": "The Future of SEO: AI & Digital Marketing Strategies in 2025",
-                            "description": "Discover how AI is transforming digital marketing. Learn key SEO strategies for 2025 including content automation and semantic search."
-                        },
-                        "suggestions": "This is a DEMO version. Buy the full script to unlock OpenAI & Gemini integrations."
-                    };
-
-                    renderResults(mockData);
-                    return; // Stop here for static mode
+                    await runMockFlow("Demo Mode: Running on Static Hosting (Client-side Mock active).");
+                    return; // Exit, success
                 }
 
-                // Normal XAMPP/Server Flow
+                // 2. Normal Server Flow (XAMPP/Localhost)
                 const apiUrl = './test_article.php';
-
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     mode: 'cors',
@@ -487,39 +489,34 @@
                     })
                 });
 
-                const rawText = await response.text();
-
-                // Custom 405 Advice
+                // 3. Failsafe: Handle 405 Method Not Allowed (GitHub Pages / Misconfig)
                 if (response.status === 405) {
-                    throw new Error("Server Error (405): POST Blocked. Try moving project to C:/xampp/htdocs/ and access via localhost.");
+                    await runMockFlow("Backend Blocked (405). Auto-switching to Demo Mode.");
+                    return; // Exit, success logic handled by mock
                 }
 
                 if (!response.ok) {
-                    console.error("HTTP Error:", response.status, rawText);
-                    throw new Error(`Server Error (${response.status})`);
+                    const errorText = await response.text();
+                    throw new Error(`Server Error (${response.status}): ${errorText.substring(0, 100)}`);
                 }
 
-                if (!rawText || rawText.trim() === '') {
-                    throw new Error("Server returned an empty response.");
-                }
+                const rawText = await response.text();
+                if (!rawText) throw new Error("Empty response from server");
 
                 let data;
                 try {
                     data = JSON.parse(rawText);
                 } catch (e) {
-                    console.error("JSON Parse Error. Raw Response:", rawText);
-                    throw new Error("Invalid response from server. Check console.");
+                    throw new Error("Invalid JSON response from server");
                 }
 
-                if (data.error) {
-                    throw new Error(data.message || 'API Error');
-                }
+                if (data.error) throw new Error(data.message || 'API Error');
 
                 renderResults(data);
 
             } catch (err) {
-                showToast(err.message);
-                console.error(err);
+                console.error("Analysis Error:", err);
+                showToast(err.message || 'An unexpected error occurred.');
             } finally {
                 setLoading(false);
             }
